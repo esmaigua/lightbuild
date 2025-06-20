@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  ## --- Profile Service ---
+  mongo-profile:
+    image: mongo:6
+    container_name: mongo-profile
+    ports:
+      - "27018:27017"
+    volumes:
+      - profile_data:/data/db
+
+  profile-service:
+    build: ./profile-service
+    container_name: profile-service
+    ports:
+      - "3001:3001"
+    environment:
+      - MONGO_URI=mongodb://mongo-profile:27017/profile_db
+    depends_on:
+      - mongo-profile
+
+  ## --- Address Service ---
+  mongo-address:
+    image: mongo:6
+    container_name: mongo-address
+    ports:
+      - "27019:27017"
+    volumes:
+      - address_data:/data/db
+
+  address-service:
+    build: ./address-service
+    container_name: address-service
+    ports:
+      - "3002:3002"
+    environment:
+      - MONGO_URI=mongodb://mongo-address:27017/address_db
+    depends_on:
+      - mongo-address
+
+  ## --- Roles Service ---
+  mongo-roles:
+    image: mongo:6
+    container_name: mongo-roles
+    ports:
+      - "27020:27017"
+    volumes:
+      - roles_data:/data/db
+
+  roles-service:
+    build: ./roles-service
+    container_name: roles-service
+    ports:
+      - "3003:3003"
+    environment:
+      - MONGO_URI=mongodb://mongo-roles:27017/roles_db
+    depends_on:
+      - mongo-roles
+
+volumes:
+  profile_data:
+  address_data:
+  roles_data:
