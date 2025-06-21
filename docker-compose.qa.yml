@@ -1,0 +1,142 @@
+services:
+  # ------------------------
+  # AUTH DOMAIN
+  # ------------------------
+
+  authdb-postgres:
+    image: postgres:16
+    container_name: authdb-postgres
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: authdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - authdb-data:/var/lib/postgresql/data
+    networks:
+      - auth-network
+
+  login-service:
+    image: esmaigua/auth-login-service:qa
+    container_name: login-service
+    ports:
+      - "8081:8081"
+    depends_on:
+      - authdb-postgres
+    networks:
+      - auth-network
+
+  register-service:
+    image: esmaigua/auth-register-service:qa
+    container_name: register-service
+    ports:
+      - "8082:8082"
+    depends_on:
+      - authdb-postgres
+    networks:
+      - auth-network
+
+  session-service:
+    image: esmaigua/auth-session-service:qa
+    container_name: session-service
+    ports:
+      - "8083:8083"
+    depends_on:
+      - authdb-postgres
+    networks:
+      - auth-network
+
+  tokens-service:
+    image: esmaigua/auth-tokens-service:qa
+    container_name: tokens-service
+    ports:
+      - "8084:8084"
+    depends_on:
+      - authdb-postgres
+    networks:
+      - auth-network
+
+  # ------------------------
+  # USERS DOMAIN
+  # ------------------------
+
+  mongo-profile:
+    image: mongo:6
+    container_name: mongo-profile
+    volumes:
+      - profile_data:/data/db
+    networks:
+      - users-network
+
+  profile-service:
+    image: esmaigua/users-profile-service:qa
+    container_name: profile-service
+    ports:
+      - "3001:3001"
+    environment:
+      - MONGO_URI=mongodb://mongo-profile:27017/profile_db
+    depends_on:
+      - mongo-profile
+    networks:
+      - users-network
+
+  mongo-address:
+    image: mongo:6
+    container_name: mongo-address
+    volumes:
+      - address_data:/data/db
+    networks:
+      - users-network
+
+  address-service:
+    image: esmaigua/users-address-service:qa
+    container_name: address-service
+    ports:
+      - "3002:3002"
+    environment:
+      - MONGO_URI=mongodb://mongo-address:27017/address_db
+    depends_on:
+      - mongo-address
+    networks:
+      - users-network
+
+  mongo-roles:
+    image: mongo:6
+    container_name: mongo-roles
+    volumes:
+      - roles_data:/data/db
+    networks:
+      - users-network
+
+  roles-service:
+    image: esmaigua/users-roles-service:qa
+    container_name: roles-service
+    ports:
+      - "3003:3003"
+    environment:
+      - MONGO_URI=mongodb://mongo-roles:27017/roles_db
+    depends_on:
+      - mongo-roles
+    networks:
+      - users-network
+
+# ------------------------
+# VOLUMES
+# ------------------------
+
+volumes:
+  authdb-data:
+  profile_data:
+  address_data:
+  roles_data:
+
+# ------------------------
+# NETWORKS
+# ------------------------
+
+networks:
+  auth-network:
+    driver: bridge
+  users-network:
+    driver: bridge
