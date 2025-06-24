@@ -45,12 +45,17 @@ jobs:
             # Cambiar al directorio correcto en EC2
             cd /home/ubuntu/lightbuild/services/auth
             # Detener y eliminar cualquier contenedor anterior
-            sudo docker compose -f docker-compose.auth.yml down || true
+            sudo docker-compose -f docker-compose.auth.yml down --rmi all --volumes --remove-orphans || true
             sudo docker system prune -af || true
+            # Verificar la existencia de imágenes y contenedores antes de iniciar
+            sudo docker images
+            sudo docker ps -a
             # Iniciar los contenedores de nuevo con las imágenes más recientes
-            sudo docker compose -f docker-compose.auth.yml up -d --build
+            sudo docker-compose -f docker-compose.auth.yml up -d --build
             # Verificar si los contenedores están corriendo
             sudo docker ps
+            # Ver los logs de los contenedores para depuración
+            sudo docker-compose -f docker-compose.auth.yml logs
 
       # Paso 5: Post-deployment
       - name: Post Checkout source code
