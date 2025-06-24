@@ -1,0 +1,33 @@
+name: Deploy Auth Domain to EC2
+
+on:
+  push:
+    branches:
+      - qa
+
+jobs:
+  deploy-auth:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Connect and deploy to EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.AWS_HOST }}
+          username: ${{ secrets.AWS_USER }}
+          key: ${{ secrets.AWS_KEY }}
+          script: |
+            # Limpia el workspace
+            rm -rf lightbuild
+            # Clona el repo
+            git clone https://github.com/esmaigua/lightbuild.git
+            cd lightbuild/services/auth
+
+            # Detiene y elimina contenedores previos si los hay
+            docker compose -f docker-compose.auth.yml down || true
+
+            # Construye e inicia los microservicios
+            docker compose -f docker-compose.auth.yml up -d --build
