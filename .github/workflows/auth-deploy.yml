@@ -1,58 +1,57 @@
-name: Deploy Authentication to AWS EC2
+name: Deploy Auth Domain to AWS EC2
 
 on:
   push:
     branches:
-      - qa  # Puedes cambiar esto para la rama que necesites, en este caso 'qa'
+      - qa
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
+      # Paso 1: Checkout del código
+      - name: Checkout source code
+        uses: actions/checkout@v4
 
-      - name: Set up Java 17
+      # Paso 2: Configurar Java y Maven
+      - name: Set up Java and Maven
         uses: actions/setup-java@v3
         with:
-          java-version: 17
-          distribution: zulu
-          cache: maven
-          java-package: jdk
-          check-latest: false
-          server-id: github
-          server-username: ${{ secrets.GITHUB_ACTOR }}
-          server-password: ${{ secrets.GITHUB_TOKEN }}
-          overwrite-settings: true
+          java-version: '17'
+          distribution: 'zulu'  # Usamos Zulu como distribución de Java
+          cache: 'maven'
 
-      - name: Build with Maven
-        run: mvn clean install
+      # Paso 3: Compilar los microservicios y empaquetarlos
+      - name: Build the microservices
+        run: |
+          cd services/auth/login-service
+          mvn clean package -DskipTests
+          cd ../register-service
+          mvn clean package -DskipTests
+          cd ../session-service
+          mvn clean package -DskipTests
+          cd ../tokens-service
+          mvn clean package -DskipTests
 
-      - name: Docker login to DockerHub
-        run: echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
-
-      - name: Copy Authentication files to EC2
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.AWS_HOST }}
-          username: ${{ secrets.AWS_USER }}
-          key: ${{ secrets.AWS_KEY }}
-          source: |
-            Backend/Domains/Authentication
-          target: /home/ubuntu/GreenCommerce/Auth
-          port: 22
-          overwrite: true
-          rm: true
-
-      - name: Deploy with Docker Compose
+      # Paso 4: Transferir los archivos y ejecutar Docker en EC2
+      - name: Build docker images and deploy to EC2
         uses: appleboy/ssh-action@v0.1.7
         with:
           host: ${{ secrets.AWS_HOST }}
           username: ${{ secrets.AWS_USER }}
           key: ${{ secrets.AWS_KEY }}
           script: |
-            cd /home/ubuntu/GreenCommerce/Auth/Backend/Domains/Authentication
-            sudo docker-compose down --rmi all --volumes --remove-orphans || true
+            # Cambiar al directorio correcto en EC2
+            cd /home/ubuntu/lightbuild/services/auth
+            # Detener y eliminar cualquier contenedor anterior
+            sudo docker compose -f docker-compose.auth.yml down || true
             sudo docker system prune -af || true
-            sudo docker-compose up --build -d
+            # Iniciar los contenedores de nuevo con las imágenes más recientes
+            sudo docker compose -f docker-compose.auth.yml up -d --build
+            # Verificar si los contenedores están corriendo
+            sudo docker ps
+
+      # Paso 5: Post-deployment
+      - name: Post Checkout source code
+        run: echo "Deployment complete"
