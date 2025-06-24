@@ -17,7 +17,8 @@ jobs:
         uses: actions/setup-java@v3
         with:
           java-version: '17'  # Ajusta según la versión que necesites
-          maven-version: '3.8.1'
+          distribution: 'adoptopenjdk'  # Especifica la distribución
+          cache: 'maven'  # Opcional, para caché de dependencias Maven
 
       - name: Build the microservices
         run: |
