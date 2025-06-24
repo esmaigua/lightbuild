@@ -13,49 +13,34 @@ jobs:
       - name: Checkout source code
         uses: actions/checkout@v4
 
-      - name: Copy Auth domain files to EC2
-        uses: appleboy/scp-action@v0.1.7
+      - name: Set up Java and Maven
+        uses: actions/setup-java@v3
         with:
-          host: ${{ secrets.AWS_HOST }}
-          username: ${{ secrets.AWS_USER }}
-          key: ${{ secrets.AWS_KEY }}
-          source: |
-            services/auth
-          target: /home/ubuntu/lightbuild
-          port: 22
-          overwrite: true
-          rm: true
+          java-version: '17'  # Ajusta según la versión que necesites
+          maven-version: '3.8.1'
 
-      - name: Deploy and compile on EC2 via SSH
+      - name: Build the microservices
+        run: |
+          cd services/auth/login-service
+          mvn clean package -DskipTests
+          cd ../register-service
+          mvn clean package -DskipTests
+          cd ../session-service
+          mvn clean package -DskipTests
+          cd ../tokens-service
+          mvn clean package -DskipTests
+
+      - name: Build docker images and deploy to EC2
         uses: appleboy/ssh-action@v0.1.7
         with:
           host: ${{ secrets.AWS_HOST }}
           username: ${{ secrets.AWS_USER }}
           key: ${{ secrets.AWS_KEY }}
-          port: 22
           script: |
             cd /home/ubuntu/lightbuild/services/auth
-
-            echo "🔧 Instalando Maven si no existe..."
-            if ! command -v mvn &> /dev/null; then
-              sudo apt update && sudo apt install -y maven
-            fi
-
-            echo "🔨 Compilando microservicios Java..."
-            for dir in */ ; do
-              if [ -f "$dir/pom.xml" ]; then
-                echo "→ Compilando $dir"
-                cd "$dir"
-                mvn clean package -DskipTests
-                cd ..
-              fi
-            done
-
-            echo "🧹 Limpiando contenedores anteriores..."
             sudo docker compose -f docker-compose.auth.yml down || true
             sudo docker system prune -af || true
-
-            echo "🐳 Desplegando servicios con Docker Compose..."
             sudo docker compose -f docker-compose.auth.yml up -d --build
 
-            echo "✅ Despliegue completo del dominio auth."
+      - name: Post Checkout source code
+        run: echo "Deployment complete"
