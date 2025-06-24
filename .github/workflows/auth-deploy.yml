@@ -1,47 +1,58 @@
-name: Deploy Auth Domain to AWS EC2
+name: Deploy Authentication to AWS EC2
 
 on:
   push:
     branches:
-      - qa
+      - qa  # Cambié
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest  # Utiliza la última versión disponible de Ubuntu
 
     steps:
-      - name: Checkout source code
-        uses: actions/checkout@v4
-
+      # Paso 1: Configurar Java y Maven
       - name: Set up Java and Maven
         uses: actions/setup-java@v3
         with:
-          java-version: '17'  # Ajusta según la versión que necesites
-          distribution: 'adoptopenjdk'  # Especifica la distribución
-          cache: 'maven'  # Opcional, para caché de dependencias Maven
+          java-version: '17'  # Usa Java 17, ajusta si es necesario
+          distribution: 'zulu'  # Usamos 'zulu' en lugar de 'adoptopenjdk'
+          cache: 'maven'  # Caching para dependencias Maven
 
-      - name: Build the microservices
-        run: |
-          cd services/auth/login-service
-          mvn clean package -DskipTests
-          cd ../register-service
-          mvn clean package -DskipTests
-          cd ../session-service
-          mvn clean package -DskipTests
-          cd ../tokens-service
-          mvn clean package -DskipTests
+      # Paso 2: Descargar el código fuente desde el repositorio
+      - name: Checkout source code
+        uses: actions/checkout@v4
 
-      - name: Build docker images and deploy to EC2
+      # Paso 3: Construir el proyecto con Maven
+      - name: Build project with Maven
+        run: mvn clean install -DskipTests
+
+      # Paso 4: Copiar los archivos del dominio Auth a la instancia EC2
+      - name: Copy Authentication domain files to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.AWS_HOST }}
+          username: ${{ secrets.AWS_USER }}
+          key: ${{ secrets.AWS_KEY }}
+          source: |
+            services/auth/*
+          target: /home/ubuntu/lightbuild/auth
+          port: 22
+          overwrite: true
+          rm: true
+
+      # Paso 5: Desplegar los servicios en la instancia EC2 vía SSH
+      - name: Deploy and compile on EC2 via SSH
         uses: appleboy/ssh-action@v0.1.7
         with:
           host: ${{ secrets.AWS_HOST }}
           username: ${{ secrets.AWS_USER }}
           key: ${{ secrets.AWS_KEY }}
           script: |
-            cd /home/ubuntu/lightbuild/services/auth
-            sudo docker compose -f docker-compose.auth.yml down || true
+            cd /home/ubuntu/lightbuild/auth
+            sudo docker-compose -f docker-compose.auth.yml down || true
             sudo docker system prune -af || true
-            sudo docker compose -f docker-compose.auth.yml up -d --build
+            sudo docker-compose -f docker-compose.auth.yml up -d --build
 
-      - name: Post Checkout source code
-        run: echo "Deployment complete"
+      # Paso 6: Confirmación de la ejecución
+      - name: Complete job
+        run: echo "Deployment to EC2 completed successfully."
