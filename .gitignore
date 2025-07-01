@@ -1,44 +1,88 @@
-# Node.js
-node_modules/
-dist/
+### IDE ###
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
 
-# Python
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-*.env
-
-# Java / Spring
+### Java ###
+# Maven
 target/
+**/target/
 *.class
 *.jar
 *.war
+*.ear
 
-# Docker
-# Docker
-**/node_modules
-**/__pycache__
+# Logs
+*.log
+logs/
+
+### Node.js (si aplica) ###
+node_modules/
+dist/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+### Python (si aplica) ###
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+
+### Docker ###
+# Archivos de entorno
 *.env
 .env
-*.log
+.env.local
+.env.development
+.env.test
+.env.production
 
-# VSCode
-.vscode/
+# Archivos de Docker no necesarios
+docker-compose.override.yml
+docker-compose.*.yml
 
-# Sistema
-.DS_Store
+### Sistema ###
 *.swp
+*.swo
+*.bak
+*.tmp
+*~
+*.orig
 
-# Terraform
+### Archivos comprimidos ###
+*.zip
+*.rar
+*.7z
+*.tar
+*.gz
+
+### Terraform ###
 .terraform/
 *.tfstate
 *.tfstate.*
-crash.log
-*.log
 *.tfvars
+crash.log
 override.tf
 override.tf.json
 *_override.tf
 *_override.tf.json
 .terraform.lock.hcl
+
+### Archivos específicos del proyecto ###
+# Excluye archivos de configuración local
+/config/*.local.yml
+/config/*.local.properties
+
+# Excluye archivos generados por el IDE
+*.iml
+*.ipr
+*.iws
+
+# Excluye directorios de desarrollo
+build/
+out/
+bin/
