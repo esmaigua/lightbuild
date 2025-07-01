@@ -71,7 +71,7 @@ jobs:
           host: ${{ secrets.EC2_AUTH_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_KEYPAIR }}
-          source: docker-compose.auth-deploy.yml
+          source: ./services/auth/docker-compose.auth-deploy.yml
           target: /home/ubuntu/lightbuild/docker-compose.auth.yml
 
       - name: 🚀 Restart Docker Compose stack in EC2
