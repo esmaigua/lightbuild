@@ -16,7 +16,7 @@ public class LoginController {
     public LoginController(LoginService loginService) {
         this.loginService = loginService;
     }
-    //Controller method post of login NEW
+    //Controller method post of login
     @PostMapping("/login")
     public ResponseEntity<String> login(@Valid @RequestBody LoginRequest request) {
         String token = loginService.login(request);
