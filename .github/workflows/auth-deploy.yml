@@ -65,14 +65,14 @@ jobs:
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/tokens-service:latest
 
-      - name: 📤 Copy docker-compose.auth-deploy.yml to EC2 and rename
+      - name: 📤 Copy docker-compose.auth-deploy.yml to EC2
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.EC2_AUTH_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_KEYPAIR }}
           source: ./services/auth/docker-compose.auth-deploy.yml
-          target: /home/ubuntu/lightbuild/docker-compose.auth.yml
+          target: /home/ubuntu/lightbuild/
 
       - name: 🚀 Restart Docker Compose stack in EC2
         uses: appleboy/ssh-action@v0.1.7
@@ -84,7 +84,7 @@ jobs:
             cd /home/ubuntu/lightbuild/
 
             echo "Stopping previous containers..."
-            docker compose -f docker-compose.auth.yml down
+            docker compose -f docker-compose.auth-deploy.yml down
 
             echo "Pulling updated images..."
             docker pull ${{ secrets.DOCKER_USERNAME }}/login-service:latest
@@ -93,7 +93,6 @@ jobs:
             docker pull ${{ secrets.DOCKER_USERNAME }}/tokens-service:latest
 
             echo "Starting services..."
-            docker compose -f docker-compose.auth.yml up -d --remove-orphans
+            docker compose -f docker-compose.auth-deploy.yml up -d --remove-orphans
 
-            echo "Containers running:"
             docker ps -a
