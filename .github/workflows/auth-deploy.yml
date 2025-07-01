@@ -73,6 +73,7 @@ jobs:
           key: ${{ secrets.EC2_KEYPAIR }}
           source: ./services/auth/docker-compose.auth-deploy.yml
           target: /home/ubuntu/lightbuild/
+          strip_components: 3  # ✅ Previene que se cree estructura de carpetas
 
       - name: 🚀 Restart Docker Compose stack in EC2
         uses: appleboy/ssh-action@v0.1.7
@@ -95,4 +96,5 @@ jobs:
             echo "Starting services..."
             docker compose -f docker-compose.auth-deploy.yml up -d --remove-orphans
 
+            echo "🟢 Running containers:"
             docker ps -a
