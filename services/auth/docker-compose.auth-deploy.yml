@@ -1,0 +1,63 @@
+version: "3.9"
+
+services:
+  authdb-postgres:
+    image: postgres:16
+    container_name: authdb-postgres
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: authdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - authdb-data:/var/lib/postgresql/data
+    networks:
+      - auth-network
+
+  login-service:
+    image: esmaigua/login-service:latest
+    container_name: login-service
+    ports:
+      - "8081:8081"
+    depends_on:
+      - authdb-postgres
+    networks:
+      - auth-network
+
+  register-service:
+    image: esmaigua/register-service:latest
+    container_name: register-service
+    ports:
+      - "8082:8082"
+    depends_on:
+      - authdb-postgres
+    networks:
+      - auth-network
+
+  session-service:
+    image: esmaigua/session-service:latest
+    container_name: session-service
+    ports:
+      - "8083:8083"
+    depends_on:
+      - authdb-postgres
+    networks:
+      - auth-network
+
+  tokens-service:
+    image: esmaigua/tokens-service:latest
+    container_name: tokens-service
+    ports:
+      - "8084:8084"
+    depends_on:
+      - authdb-postgres
+    networks:
+      - auth-network
+
+volumes:
+  authdb-data:
+
+networks:
+  auth-network:
+    driver: bridge

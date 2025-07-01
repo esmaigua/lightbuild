@@ -43,7 +43,6 @@ __pycache__/
 
 # Archivos de Docker no necesarios
 docker-compose.override.yml
-docker-compose.*.yml
 
 ### Sistema ###
 *.swp
