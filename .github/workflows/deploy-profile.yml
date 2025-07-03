@@ -34,13 +34,27 @@ jobs:
           docker push $DOCKER_USERNAME/${svc}-profile-service:latest
         done
 
-    - name: 📤 Copy docker-compose.profile-deploy.yml to EC2
+    - name: Copy docker-compose file to EC2
       uses: appleboy/scp-action@v0.1.7
       with:
         host: ${{ env.EC2_PROFILE_HOST }}
         username: ${{ env.EC2_USERNAME }}
         key: ${{ env.EC2_KEYPAIR }}
         source: ./services/users/profile/docker-compose.profile-deploy.yml
+        target: /home/ubuntu/profile-deployment/
+        strip_components: 4
+
+    - name: Copy .env files to EC2
+      uses: appleboy/scp-action@v0.1.7
+      with:
+        host: ${{ env.EC2_PROFILE_HOST }}
+        username: ${{ env.EC2_USERNAME }}
+        key: ${{ env.EC2_KEYPAIR }}
+        source: |
+          ./services/users/profile/create-profile-service/.env
+          ./services/users/profile/get-profile-service/.env
+          ./services/users/profile/update-profile-service/.env
+          ./services/users/profile/delete-profile-service/.env
         target: /home/ubuntu/profile-deployment/
         strip_components: 4
 
@@ -51,7 +65,7 @@ jobs:
         username: ${{ env.EC2_USERNAME }}
         key: ${{ env.EC2_KEYPAIR }}
         script: |
-          cd /home/ubuntu/profile-deployment
-          docker compose -f docker-compose.profile-deploy.yml down
+          cd ~/profile-deployment
+          docker compose -f docker-compose.profile-deploy.yml down || true
           docker compose -f docker-compose.profile-deploy.yml pull
           docker compose -f docker-compose.profile-deploy.yml up -d
