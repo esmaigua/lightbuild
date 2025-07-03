@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  create-profile-service:
+    build: ./create-profile-service
+    ports:
+      - '3001:3001'
+    env_file: ./create-profile-service/.env
+    networks:
+      - profile-network
+    depends_on:
+      - mongo-profile
+
+  get-profile-service:
+    build: ./get-profile-service
+    ports:
+      - '3002:3002'
+    env_file: ./get-profile-service/.env
+    networks:
+      - profile-network
+    depends_on:
+      - mongo-profile
+
+  update-profile-service:
+    build: ./update-profile-service
+    ports:
+      - '3003:3003'
+    env_file: ./update-profile-service/.env
+    networks:
+      - profile-network
+    depends_on:
+      - mongo-profile
+
+  delete-profile-service:
+    build: ./delete-profile-service
+    ports:
+      - '3004:3004'
+    env_file: ./delete-profile-service/.env
+    networks:
+      - profile-network
+    depends_on:
+      - mongo-profile
+
+  mongo-profile:
+    image: mongo:6.0
+    container_name: mongo-profile
+    ports:
+      - '27018:27017'
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin123
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - profile-network
+
+volumes:
+  mongo_data:
+
+networks:
+  profile-network:
+    driver: bridge

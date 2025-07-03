@@ -1,0 +1,35 @@
+openapi: 3.0.0
+info:
+  title: Update Profile API
+  version: 1.0.0
+paths:
+  /users/profiles/{userId}:
+    put:
+      summary: Actualizar un perfil de usuario por ID
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fullName:
+                  type: string
+                phone:
+                  type: string
+                birthDate:
+                  type: string
+                  format: date
+                gender:
+                  type: string
+      responses:
+        '200':
+          description: Perfil actualizado correctamente
+        '404':
+          description: Perfil no encontrado

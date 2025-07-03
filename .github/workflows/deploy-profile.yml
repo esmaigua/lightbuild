@@ -1,0 +1,56 @@
+name: Deploy Profile Subdomain
+
+on:
+  push:
+    paths:
+      - 'services/users/profile/**'
+    branches:
+      - qa
+
+env:
+  DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+  DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+  EC2_PROFILE_HOST: ${{ secrets.EC2_PROFILE_HOST }}
+  EC2_USERNAME: ${{ secrets.EC2_USERNAME }}
+  EC2_KEYPAIR: ${{ secrets.EC2_KEYPAIR }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Log in to Docker Hub
+      run: echo "$DOCKER_PASSWORD" | docker login -u $DOCKER_USERNAME --password-stdin
+
+    - name: Build & Push Docker images
+      working-directory: users/profile
+      run: |
+        services=(create get update delete)
+        for svc in "${services[@]}"; do
+          docker build -t $DOCKER_USERNAME/${svc}-profile-service:latest ./${svc}-profile-service
+          docker push $DOCKER_USERNAME/${svc}-profile-service:latest
+        done
+
+    - name: Copy production compose file to EC2
+      uses: appleboy/scp-action@v0.1.4
+      with:
+        host: ${{ env.EC2_PROFILE_HOST }}
+        username: ${{ env.EC2_USERNAME }}
+        key: ${{ env.EC2_KEYPAIR }}
+        source: "users/profile/docker-compose.profile-deploy.yml"
+        target: "~/profile-deployment"
+
+    - name: Deploy to EC2 via SSH
+      uses: appleboy/ssh-action@v0.1.6
+      with:
+        host: ${{ env.EC2_PROFILE_HOST }}
+        username: ${{ env.EC2_USERNAME }}
+        key: ${{ env.EC2_KEYPAIR }}
+        script: |
+          cd ~/profile-deployment
+          docker compose -f docker-compose.profile-deploy.yml down
+          docker compose -f docker-compose.profile-deploy.yml pull
+          docker compose -f docker-compose.profile-deploy.yml up -d

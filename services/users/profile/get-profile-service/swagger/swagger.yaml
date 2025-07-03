@@ -1,0 +1,19 @@
+openapi: 3.0.0
+info:
+  title: Get Profile API
+  version: 1.0.0
+paths:
+  /users/profiles/{userId}:
+    get:
+      summary: Obtener perfil de usuario por ID
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Perfil encontrado
+        '404':
+          description: Perfil no encontrado

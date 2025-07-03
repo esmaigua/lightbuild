@@ -1,0 +1,31 @@
+openapi: 3.0.0
+info:
+  title: Create Profile API
+  version: 1.0.0
+paths:
+  /users/profiles:
+    post:
+      summary: Crear un nuevo perfil
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                userId:
+                  type: string
+                fullName:
+                  type: string
+                phone:
+                  type: string
+                birthDate:
+                  type: string
+                  format: date
+                gender:
+                  type: string
+      responses:
+        '201':
+          description: Perfil creado exitosamente
+        '400':
+          description: Error de validación

@@ -1,0 +1,23 @@
+{
+  "name": "get-profile-service",
+  "version": "1.0.0",
+  "description": "Microservicio para obtener perfiles de usuario en Lightbuild",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "nodemon app.js",
+    "test": "jest"
+  },
+  "dependencies": {
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
+    "mongoose": "^7.3.1",
+    "swagger-ui-express": "^4.6.3",
+    "yamljs": "^0.3.0"
+  },
+  "devDependencies": {
+    "jest": "^29.5.0",
+    "supertest": "^6.3.3",
+    "nodemon": "^3.0.1"
+  }
+}
