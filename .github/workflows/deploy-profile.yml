@@ -34,14 +34,15 @@ jobs:
           docker push $DOCKER_USERNAME/${svc}-profile-service:latest
         done
 
-    - name: Copy production compose file to EC2
-      uses: appleboy/scp-action@v0.1.4
+    - name: 📤 Copy docker-compose.profile-deploy.yml to EC2
+      uses: appleboy/scp-action@v0.1.7
       with:
         host: ${{ env.EC2_PROFILE_HOST }}
         username: ${{ env.EC2_USERNAME }}
         key: ${{ env.EC2_KEYPAIR }}
-        source: "services/users/profile/docker-compose.profile-deploy.yml"
-        target: "~/profile-deployment"
+        source: ./services/users/profile/docker-compose.profile-deploy.yml
+        target: /home/ubuntu/profile-deployment/
+        strip_components: 3
 
     - name: Deploy to EC2 via SSH
       uses: appleboy/ssh-action@v0.1.6
@@ -50,7 +51,7 @@ jobs:
         username: ${{ env.EC2_USERNAME }}
         key: ${{ env.EC2_KEYPAIR }}
         script: |
-          cd ~/profile-deployment
+          cd /home/ubuntu/profile-deployment
           docker compose -f docker-compose.profile-deploy.yml down
           docker compose -f docker-compose.profile-deploy.yml pull
           docker compose -f docker-compose.profile-deploy.yml up -d
