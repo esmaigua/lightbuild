@@ -26,7 +26,7 @@ jobs:
       run: echo "$DOCKER_PASSWORD" | docker login -u $DOCKER_USERNAME --password-stdin
 
     - name: Build & Push Docker images
-      working-directory: users/profile
+      working-directory: services/users/profile
       run: |
         services=(create get update delete)
         for svc in "${services[@]}"; do
@@ -40,7 +40,7 @@ jobs:
         host: ${{ env.EC2_PROFILE_HOST }}
         username: ${{ env.EC2_USERNAME }}
         key: ${{ env.EC2_KEYPAIR }}
-        source: "users/profile/docker-compose.profile-deploy.yml"
+        source: "services/users/profile/docker-compose.profile-deploy.yml"
         target: "~/profile-deployment"
 
     - name: Deploy to EC2 via SSH
