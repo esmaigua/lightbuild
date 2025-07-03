@@ -1,5 +1,5 @@
 const { deleteProfileByUserId } = require('../services/profileService');
-//Perfil delete test CI
+//Perfil delete test CI new
 const deleteProfileHandler = async (req, res) => {
   try {
     const result = await deleteProfileByUserId(req.params.userId);
