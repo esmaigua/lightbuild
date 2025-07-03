@@ -42,7 +42,7 @@ jobs:
         key: ${{ env.EC2_KEYPAIR }}
         source: ./services/users/profile/docker-compose.profile-deploy.yml
         target: /home/ubuntu/profile-deployment/
-        strip_components: 3
+        strip_components: 4
 
     - name: Deploy to EC2 via SSH
       uses: appleboy/ssh-action@v0.1.6
