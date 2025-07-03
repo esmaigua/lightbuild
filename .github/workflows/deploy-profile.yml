@@ -1,4 +1,4 @@
-name: Deploy Profile Subdomain
+name: Deploy Profile Microservices to EC2
 
 on:
   push:
@@ -19,53 +19,82 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+      # 1️⃣ Checkout del repositorio
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Log in to Docker Hub
-      run: echo "$DOCKER_PASSWORD" | docker login -u $DOCKER_USERNAME --password-stdin
+      # 2️⃣ Login en Docker Hub
+      - name: Login to Docker Hub
+        run: |
+          echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
 
-    - name: Build & Push Docker images
-      working-directory: services/users/profile
-      run: |
-        services=(create get update delete)
-        for svc in "${services[@]}"; do
-          docker build -t $DOCKER_USERNAME/${svc}-profile-service:latest ./${svc}-profile-service
-          docker push $DOCKER_USERNAME/${svc}-profile-service:latest
-        done
+      # 3️⃣ Build & Push de imágenes Docker
+      - name: Build & Push Docker Images
+        working-directory: services/users/profile
+        run: |
+          services=("create" "get" "update" "delete")
+          for svc in "${services[@]}"; do
+            docker build -t "$DOCKER_USERNAME/${svc}-profile-service:latest" "./${svc}-profile-service"
+            docker push "$DOCKER_USERNAME/${svc}-profile-service:latest"
+          done
 
-    - name: Copy docker-compose file to EC2
-      uses: appleboy/scp-action@v0.1.7
-      with:
-        host: ${{ env.EC2_PROFILE_HOST }}
-        username: ${{ env.EC2_USERNAME }}
-        key: ${{ env.EC2_KEYPAIR }}
-        source: "./services/users/profile/docker-compose.profile-deploy.yml"
-        target: /home/ubuntu/profile-deployment/
-        strip_components: 4
+      # 4️⃣ Copiar docker-compose al EC2
+      - name: Copy docker-compose to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ env.EC2_PROFILE_HOST }}
+          username: ${{ env.EC2_USERNAME }}
+          key: ${{ env.EC2_KEYPAIR }}
+          source: services/users/profile/docker-compose.profile-deploy.yml
+          target: /home/ubuntu/profile-deployment/
+          strip_components: 4
 
-    - name: Copy .env files to EC2
-      uses: appleboy/scp-action@v0.1.7
-      with:
-        host: ${{ env.EC2_PROFILE_HOST }}
-        username: ${{ env.EC2_USERNAME }}
-        key: ${{ env.EC2_KEYPAIR }}
-        source: |
-          "./services/users/profile/create-profile-service/.env"
-          "./services/users/profile/get-profile-service/.env"
-          "./services/users/profile/update-profile-service/.env"
-          "./services/users/profile/delete-profile-service/.env"
-        target: /home/ubuntu/profile-deployment/
-        strip_components: 3
+      # 5️⃣ Crear archivos .env en EC2 usando secretos
+      - name: Create .env files on EC2
+        uses: appleboy/ssh-action@v0.1.6
+        with:
+          host: ${{ env.EC2_PROFILE_HOST }}
+          username: ${{ env.EC2_USERNAME }}
+          key: ${{ env.EC2_KEYPAIR }}
+          script: |
+            echo "🔧 Generando archivos .env desde GitHub Secrets..."
+            MONGO_URI="${{ secrets.PROFILE_MONGO_URI }}"
 
-    - name: Deploy to EC2 via SSH
-      uses: appleboy/ssh-action@v0.1.6
-      with:
-        host: ${{ env.EC2_PROFILE_HOST }}
-        username: ${{ env.EC2_USERNAME }}
-        key: ${{ env.EC2_KEYPAIR }}
-        script: |
-          cd ~/profile-deployment
-          docker compose -f docker-compose.profile-deploy.yml down || true
-          docker compose -f docker-compose.profile-deploy.yml pull
-          docker compose -f docker-compose.profile-deploy.yml up -d
+            mkdir -p /home/ubuntu/profile-deployment
+
+            declare -A PORTS=(
+              [create]=${{ secrets.CREATE_PROFILE_PORT }}
+              [get]=${{ secrets.GET_PROFILE_PORT }}
+              [update]=${{ secrets.UPDATE_PROFILE_PORT }}
+              [delete]=${{ secrets.DELETE_PROFILE_PORT }}
+            )
+
+            for svc in "${!PORTS[@]}"; do
+              mkdir -p "/home/ubuntu/profile-deployment/${svc}-profile-service"
+              echo "PORT=${PORTS[$svc]}" > "/home/ubuntu/profile-deployment/${svc}-profile-service/.env"
+              echo "MONGO_URI=$MONGO_URI" >> "/home/ubuntu/profile-deployment/${svc}-profile-service/.env"
+            done
+
+            echo "✅ Archivos .env generados:"
+            find /home/ubuntu/profile-deployment -name .env -exec cat {} \;
+
+      # 6️⃣ Desplegar los microservicios en EC2
+      - name: Deploy Services via SSH
+        uses: appleboy/ssh-action@v0.1.6
+        with:
+          host: ${{ env.EC2_PROFILE_HOST }}
+          username: ${{ env.EC2_USERNAME }}
+          key: ${{ env.EC2_KEYPAIR }}
+          script: |
+            cd /home/ubuntu/profile-deployment
+            echo "⛔️ Parando servicios anteriores si existen..."
+            docker compose -f docker-compose.profile-deploy.yml down || true
+
+            echo "⬇️ Haciendo pull de las últimas imágenes..."
+            docker compose -f docker-compose.profile-deploy.yml pull
+
+            echo "🚀 Levantando los nuevos servicios..."
+            docker compose -f docker-compose.profile-deploy.yml up -d --build
+
+            echo "📦 Contenedores activos:"
+            docker ps --filter "name=profile"
