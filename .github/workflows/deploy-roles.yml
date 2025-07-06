@@ -28,38 +28,28 @@ jobs:
         run: |
           echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
 
-      # 3️⃣ Build & Push Docker Images
+      # 3️⃣ Build & Push de imágenes Docker
       - name: Build & Push Docker Images
         working-directory: services/users/roles
         run: |
-          services=("assign-role-service" "list-roles-service" "remove-role-service")
+          services=("assign-role" "list-roles" "remove-role")
           for svc in "${services[@]}"; do
-            docker build -t "$DOCKER_USERNAME/${svc}:latest" "./${svc}"
-            docker push "$DOCKER_USERNAME/${svc}:latest"
+            docker build -t "$DOCKER_USERNAME/${svc}-service:latest" "./${svc}-service"
+            docker push "$DOCKER_USERNAME/${svc}-service:latest"
           done
 
-      # 4️⃣ Crear directorio en EC2
-      - name: Create deployment directory on EC2
-        uses: appleboy/ssh-action@v0.1.6
-        with:
-          host: ${{ env.EC2_ROLES_HOST }}
-          username: ${{ env.EC2_USERNAME }}
-          key: ${{ env.EC2_KEYPAIR }}
-          script: |
-            mkdir -p /home/ubuntu/roles-deployment
-
-      # 5️⃣ Copiar docker-compose al EC2 (VERSIÓN CORREGIDA)
+      # 4️⃣ Copiar docker-compose al EC2
       - name: Copy docker-compose to EC2
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ env.EC2_ROLES_HOST }}
           username: ${{ env.EC2_USERNAME }}
           key: ${{ env.EC2_KEYPAIR }}
-          source: "docker-compose.roles-deploy.yml"
-          target: "/home/ubuntu/roles-deployment/"
-          working-directory: "services/users/roles"
+          source: services/users/roles/docker-compose.roles-deploy.yml
+          target: /home/ubuntu/roles-deployment/
+          strip_components: 4
 
-      # 6️⃣ Crear archivos .env en EC2
+      # 5️⃣ Crear archivos .env en EC2 usando secretos
       - name: Create .env files on EC2
         uses: appleboy/ssh-action@v0.1.6
         with:
@@ -67,8 +57,10 @@ jobs:
           username: ${{ env.EC2_USERNAME }}
           key: ${{ env.EC2_KEYPAIR }}
           script: |
-            echo "🔧 Generando archivos .env..."
+            echo "🔧 Generando archivos .env desde GitHub Secrets..."
             MONGO_URI="${{ secrets.ROLES_MONGO_URI }}"
+
+            mkdir -p /home/ubuntu/roles-deployment
 
             declare -A PORTS=(
               [assign-role]=${{ secrets.ASSIGN_ROLE_PORT }}
@@ -82,8 +74,11 @@ jobs:
               echo "MONGO_URI=$MONGO_URI" >> "/home/ubuntu/roles-deployment/${svc}-service/.env"
             done
 
-      # 7️⃣ Desplegar servicios en EC2
-      - name: Deploy Services
+            echo "✅ Archivos .env generados:"
+            find /home/ubuntu/roles-deployment -name .env -exec cat {} \;
+
+      # 6️⃣ Desplegar los microservicios en EC2
+      - name: Deploy Services via SSH
         uses: appleboy/ssh-action@v0.1.6
         with:
           host: ${{ env.EC2_ROLES_HOST }}
@@ -91,28 +86,14 @@ jobs:
           key: ${{ env.EC2_KEYPAIR }}
           script: |
             cd /home/ubuntu/roles-deployment
-            echo "🛑 Deteniendo servicios anteriores..."
+            echo "⛔️ Parando servicios anteriores si existen..."
             docker compose -f docker-compose.roles-deploy.yml down || true
-            
-            echo "🔽 Obteniendo imágenes actualizadas..."
-            docker compose -f docker-compose.roles-deploy.yml pull
-            
-            echo "🚀 Iniciando servicios..."
-            docker compose -f docker-compose.roles-deploy.yml up -d
-            
-            echo "✅ Verificación final:"
-            docker ps -a
-            docker compose -f docker-compose.roles-deploy.yml ps
 
-      # 8️⃣ Verificación adicional
-      - name: Health Check
-        uses: appleboy/ssh-action@v0.1.6
-        with:
-          host: ${{ env.EC2_ROLES_HOST }}
-          username: ${{ env.EC2_USERNAME }}
-          key: ${{ env.EC2_KEYPAIR }}
-          script: |
-            echo "🧪 Realizando pruebas de conectividad..."
-            curl -v http://localhost:3009/health || echo "Assign Role Service no responde"
-            curl -v http://localhost:3010/health || echo "List Roles Service no responde"
-            curl -v http://localhost:3011/health || echo "Remove Role Service no responde"
+            echo "⬇️ Haciendo pull de las últimas imágenes..."
+            docker compose -f docker-compose.roles-deploy.yml pull
+
+            echo "🚀 Levantando los nuevos servicios..."
+            docker compose -f docker-compose.roles-deploy.yml up -d
+
+            echo "📦 Contenedores activos:"
+            docker ps --filter "name=role"
