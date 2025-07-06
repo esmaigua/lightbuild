@@ -1,0 +1,23 @@
+version: '3.8'
+services:
+  list-address-service:
+    build: .
+    ports:
+      - '3006:3006'
+    env_file: .env
+    depends_on:
+      - mongo-address
+
+  mongo-address:
+    image: mongo:6.0
+    container_name: mongo-address
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=admin123
+    ports:
+      - '27019:27017'
+    volumes:
+      - mongo_data:/data/db
+
+volumes:
+  mongo_data:

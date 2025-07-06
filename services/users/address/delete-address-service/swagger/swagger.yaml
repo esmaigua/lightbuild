@@ -1,0 +1,26 @@
+openapi: 3.0.0
+info:
+  title: Delete Address API
+  version: 1.0.0
+paths:
+  /users/addresses:
+    delete:
+      summary: Eliminar dirección (soft delete)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                _id:
+                  type: string
+      responses:
+        '200':
+          description: Dirección eliminada
+        '400':
+          description: Falta el ID
+        '404':
+          description: Dirección no encontrada
+        '500':
+          description: Error interno

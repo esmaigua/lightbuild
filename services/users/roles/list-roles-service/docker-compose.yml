@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  list-roles-service:
+    build: .
+    ports:
+      - "3010:3010"
+    env_file:
+      - .env
+    depends_on:
+      - mongo-roles
+
+  mongo-roles:
+    image: mongo
+    container_name: mongo-roles
+    restart: always
+    ports:
+      - "27020:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin123

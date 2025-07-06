@@ -1,0 +1,25 @@
+version: '3.8'
+services:
+  create-address:
+    build: .
+    ports:
+      - "3005:3005"
+    environment:
+      - PORT=3005
+      - MONGO_URI=mongodb://admin:admin123@mongo-address:27017/create_address_db?authSource=admin
+    depends_on:
+      - mongo-address
+
+  mongo-address:
+    image: mongo:6.0
+    container_name: mongo-address
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=admin123
+    ports:
+      - "27019:27017"
+    volumes:
+      - mongo_data:/data/db
+
+volumes:
+  mongo_data:

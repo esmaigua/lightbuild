@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  create-address-service:
+    image: esmaigua/create-address-service:latest
+    ports:
+      - '3005:3005'
+    env_file: ./create-address-service/.env
+    networks:
+      - address-network
+
+  list-address-service:
+    image: esmaigua/list-addresses-service:latest
+    ports:
+      - '3006:3006'
+    env_file: ./list-addresses-service/.env
+    networks:
+      - address-network
+
+  update-address-service:
+    image: esmaigua/update-address-service:latest
+    ports:
+      - '3007:3007'
+    env_file: ./update-address-service/.env
+    networks:
+      - address-network
+
+  delete-address-service:
+    image: esmaigua/delete-address-service:latest
+    ports:
+      - '3008:3008'
+    env_file: ./delete-address-service/.env
+    networks:
+      - address-network
+
+  mongo-address:
+    image: mongo:6.0
+    container_name: mongo-address
+    ports:
+      - '27019:27017'
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin123
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - address-network
+
+volumes:
+  mongo_data:
+
+networks:
+  address-network:
+    driver: bridge

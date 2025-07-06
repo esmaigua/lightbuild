@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  assign-role-service:
+    build: ./assign-role-service
+    ports:
+      - '3009:3009'
+    env_file: ./assign-role-service/.env
+    networks:
+      - roles-network
+    depends_on:
+      - mongo-roles
+
+  list-roles-service:
+    build: ./list-roles-service
+    ports:
+      - '3010:3010'
+    env_file: ./list-roles-service/.env
+    networks:
+      - roles-network
+    depends_on:
+      - mongo-roles
+
+  remove-role-service:
+    build: ./remove-role-service
+    ports:
+      - '3011:3011'
+    env_file: ./remove-role-service/.env
+    networks:
+      - roles-network
+    depends_on:
+      - mongo-roles
+
+  mongo-roles:
+    image: mongo:6.0
+    container_name: mongo-roles
+    ports:
+      - '27020:27017'
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin123
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - roles-network
+
+volumes:
+  mongo_data:
+
+networks:
+  roles-network:
+    driver: bridge

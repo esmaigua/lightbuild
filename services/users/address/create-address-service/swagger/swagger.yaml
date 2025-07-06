@@ -1,0 +1,39 @@
+openapi: 3.0.0
+info:
+  title: Create Address API
+  version: 1.0.0
+  description: API para crear direcciones de usuario.
+paths:
+  /create-address:
+    post:
+      summary: Crear una nueva dirección
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - user_id
+              properties:
+                user_id:
+                  type: string
+                street:
+                  type: string
+                city:
+                  type: string
+                state:
+                  type: string
+                postal_code:
+                  type: string
+                country:
+                  type: string
+                is_primary:
+                  type: boolean
+      responses:
+        '201':
+          description: Dirección creada exitosamente
+        '400':
+          description: Datos faltantes o inválidos
+        '500':
+          description: Error del servidor

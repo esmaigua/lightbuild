@@ -1,0 +1,36 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Remove Role Service",
+    "version": "1.0.0",
+    "description": "Service to delete a role by ID"
+  },
+  "paths": {
+    "/remove-role/{id}": {
+      "delete": {
+        "summary": "Delete a role by ID",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Role deleted successfully"
+          },
+          "404": {
+            "description": "Role not found"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    }
+  }
+}
