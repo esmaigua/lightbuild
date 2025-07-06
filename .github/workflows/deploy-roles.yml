@@ -38,18 +38,28 @@ jobs:
             docker push "$DOCKER_USERNAME/${svc}:latest"
           done
 
-      # 4️⃣ Copiar docker-compose al EC2
+      # 4️⃣ Crear directorio en EC2
+      - name: Create deployment directory on EC2
+        uses: appleboy/ssh-action@v0.1.6
+        with:
+          host: ${{ env.EC2_ROLES_HOST }}
+          username: ${{ env.EC2_USERNAME }}
+          key: ${{ env.EC2_KEYPAIR }}
+          script: |
+            mkdir -p /home/ubuntu/roles-deployment
+
+      # 5️⃣ Copiar docker-compose al EC2 (VERSIÓN CORREGIDA)
       - name: Copy docker-compose to EC2
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ env.EC2_ROLES_HOST }}
           username: ${{ env.EC2_USERNAME }}
           key: ${{ env.EC2_KEYPAIR }}
-          source: services/users/roles/docker-compose.roles-deploy.yml
-          target: /home/ubuntu/roles-deployment/
-          #strip_components: 4
+          source: "docker-compose.roles-deploy.yml"
+          target: "/home/ubuntu/roles-deployment/"
+          working-directory: "services/users/roles"
 
-      # 5️⃣ Crear archivos .env en EC2 usando secretos
+      # 6️⃣ Crear archivos .env en EC2
       - name: Create .env files on EC2
         uses: appleboy/ssh-action@v0.1.6
         with:
@@ -57,10 +67,8 @@ jobs:
           username: ${{ env.EC2_USERNAME }}
           key: ${{ env.EC2_KEYPAIR }}
           script: |
-            echo "🔧 Generando archivos .env desde GitHub Secrets..."
+            echo "🔧 Generando archivos .env..."
             MONGO_URI="${{ secrets.ROLES_MONGO_URI }}"
-
-            mkdir -p /home/ubuntu/roles-deployment
 
             declare -A PORTS=(
               [assign-role]=${{ secrets.ASSIGN_ROLE_PORT }}
@@ -74,11 +82,8 @@ jobs:
               echo "MONGO_URI=$MONGO_URI" >> "/home/ubuntu/roles-deployment/${svc}-service/.env"
             done
 
-            echo "✅ Archivos .env generados:"
-            find /home/ubuntu/roles-deployment -name .env -exec cat {} \;
-
-      # 6️⃣ Desplegar los microservicios en EC2
-      - name: Deploy Services via SSH
+      # 7️⃣ Desplegar servicios en EC2
+      - name: Deploy Services
         uses: appleboy/ssh-action@v0.1.6
         with:
           host: ${{ env.EC2_ROLES_HOST }}
@@ -86,14 +91,28 @@ jobs:
           key: ${{ env.EC2_KEYPAIR }}
           script: |
             cd /home/ubuntu/roles-deployment
-            echo "⛔️ Parando servicios anteriores si existen..."
+            echo "🛑 Deteniendo servicios anteriores..."
             docker compose -f docker-compose.roles-deploy.yml down || true
-
-            echo "⬇️ Haciendo pull de las últimas imágenes..."
+            
+            echo "🔽 Obteniendo imágenes actualizadas..."
             docker compose -f docker-compose.roles-deploy.yml pull
+            
+            echo "🚀 Iniciando servicios..."
+            docker compose -f docker-compose.roles-deploy.yml up -d
+            
+            echo "✅ Verificación final:"
+            docker ps -a
+            docker compose -f docker-compose.roles-deploy.yml ps
 
-            echo "🚀 Levantando los nuevos servicios..."
-            docker compose -f docker-compose.roles-deploy.yml up -d --build
-
-            echo "📦 Contenedores activos:"
-            docker ps --filter "name=role"
+      # 8️⃣ Verificación adicional
+      - name: Health Check
+        uses: appleboy/ssh-action@v0.1.6
+        with:
+          host: ${{ env.EC2_ROLES_HOST }}
+          username: ${{ env.EC2_USERNAME }}
+          key: ${{ env.EC2_KEYPAIR }}
+          script: |
+            echo "🧪 Realizando pruebas de conectividad..."
+            curl -v http://localhost:3009/health || echo "Assign Role Service no responde"
+            curl -v http://localhost:3010/health || echo "List Roles Service no responde"
+            curl -v http://localhost:3011/health || echo "Remove Role Service no responde"
