@@ -1,5 +1,5 @@
 const { assignRole } = require('../services/assignRoleService');
-//new test
+
 const assignRoleHandler = async (req, res) => {
     const { userId, role } = req.body;
 
