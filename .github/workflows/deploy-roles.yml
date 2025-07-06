@@ -45,7 +45,7 @@ jobs:
           host: ${{ env.EC2_ROLES_HOST }}
           username: ${{ env.EC2_USERNAME }}
           key: ${{ env.EC2_KEYPAIR }}
-          source: services/users/roles/docker-compose.address-deploy.yml
+          source: services/users/roles/docker-compose.roles-deploy.yml
           target: /home/ubuntu/roles-deployment/
           strip_components: 4
 
@@ -64,7 +64,7 @@ jobs:
 
             declare -A PORTS=(
               [assign-role]=${{ secrets.ASSIGN_ROLE_PORT }}
-              [list-roles]=${{ secrets.LIST_ROLES_PORT }}
+              [list-roles]=${{ secrets.LIST_ROLE_PORT }}
               [remove-role]=${{ secrets.REMOVE_ROLE_PORT }}
             )
 
@@ -87,13 +87,13 @@ jobs:
           script: |
             cd /home/ubuntu/roles-deployment
             echo "⛔️ Parando servicios anteriores si existen..."
-            docker compose -f docker-compose.address-deploy.yml down || true
+            docker compose -f docker-compose.roles-deploy.yml down || true
 
             echo "⬇️ Haciendo pull de las últimas imágenes..."
-            docker compose -f docker-compose.address-deploy.yml pull
+            docker compose -f docker-compose.roles-deploy.yml pull
 
             echo "🚀 Levantando los nuevos servicios..."
-            docker compose -f docker-compose.address-deploy.yml up -d --build
+            docker compose -f docker-compose.roles-deploy.yml up -d --build
 
             echo "📦 Contenedores activos:"
             docker ps --filter "name=role"
