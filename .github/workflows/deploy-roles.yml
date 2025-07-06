@@ -32,11 +32,10 @@ jobs:
       - name: Build & Push Docker Images
         working-directory: services/users/roles
         run: |
-          services=("assign-role" "list-roles" "remove-role")
+          services=("assign-role-service" "list-roles-service" "remove-role-service")
           for svc in "${services[@]}"; do
-            echo "🚧 Building $svc-service..."
-            docker build -t "$DOCKER_USERNAME/${svc}-service:latest" "./${svc}-service"
-            docker push "$DOCKER_USERNAME/${svc}-service:latest"
+            docker build -t "$DOCKER_USERNAME/${svc}:latest" "./${svc}"
+            docker push "$DOCKER_USERNAME/${svc}:latest"
           done
 
       # 4️⃣ Copiar docker-compose al EC2
@@ -65,7 +64,7 @@ jobs:
 
             declare -A PORTS=(
               [assign-role]=${{ secrets.ASSIGN_ROLE_PORT }}
-              [list-roles]=${{ secrets.LIST_ROLE_PORT }}
+              [list-roles]=${{ secrets.LIST_ROLES_PORT }}
               [remove-role]=${{ secrets.REMOVE_ROLE_PORT }}
             )
 
@@ -79,7 +78,7 @@ jobs:
             find /home/ubuntu/roles-deployment -name .env -exec cat {} \;
 
       # 6️⃣ Desplegar los microservicios en EC2
-      - name: Deploy Roles Services via SSH
+      - name: Deploy Services via SSH
         uses: appleboy/ssh-action@v0.1.6
         with:
           host: ${{ env.EC2_ROLES_HOST }}
