@@ -32,7 +32,7 @@ jobs:
       - name: Build & Push Docker Images
         working-directory: services/users/roles
         run: |
-          services=("assign" "list" "remove")
+          services=("assign" "list-roles" "remove")
           for svc in "${services[@]}"; do
             docker build -t "$DOCKER_USERNAME/${svc}-role-service:latest" "./${svc}-role-service"
             docker push "$DOCKER_USERNAME/${svc}-role-service:latest"
