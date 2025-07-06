@@ -32,10 +32,11 @@ jobs:
       - name: Build & Push Docker Images
         working-directory: services/users/roles
         run: |
-          services=("assign" "list-roles" "remove")
+          services=("assign-role" "list-roles" "remove-role")
           for svc in "${services[@]}"; do
-            docker build -t "$DOCKER_USERNAME/${svc}-role-service:latest" "./${svc}-role-service"
-            docker push "$DOCKER_USERNAME/${svc}-role-service:latest"
+            echo "🚧 Building $svc-service..."
+            docker build -t "$DOCKER_USERNAME/${svc}-service:latest" "./${svc}-service"
+            docker push "$DOCKER_USERNAME/${svc}-service:latest"
           done
 
       # 4️⃣ Copiar docker-compose al EC2
@@ -62,16 +63,16 @@ jobs:
 
             mkdir -p /home/ubuntu/roles-deployment
 
-            declare -A PORTS=( 
-              [assign]=${{ secrets.ASSIGN_ROLE_PORT }}
-              [list]=${{ secrets.LIST_ROLE_PORT }}
-              [remove]=${{ secrets.REMOVE_ROLE_PORT }}
+            declare -A PORTS=(
+              [assign-role]=${{ secrets.ASSIGN_ROLE_PORT }}
+              [list-roles]=${{ secrets.LIST_ROLE_PORT }}
+              [remove-role]=${{ secrets.REMOVE_ROLE_PORT }}
             )
 
             for svc in "${!PORTS[@]}"; do
-              mkdir -p "/home/ubuntu/roles-deployment/${svc}-role-service"
-              echo "PORT=${PORTS[$svc]}" > "/home/ubuntu/roles-deployment/${svc}-role-service/.env"
-              echo "MONGO_URI=$MONGO_URI" >> "/home/ubuntu/roles-deployment/${svc}-role-service/.env"
+              mkdir -p "/home/ubuntu/roles-deployment/${svc}-service"
+              echo "PORT=${PORTS[$svc]}" > "/home/ubuntu/roles-deployment/${svc}-service/.env"
+              echo "MONGO_URI=$MONGO_URI" >> "/home/ubuntu/roles-deployment/${svc}-service/.env"
             done
 
             echo "✅ Archivos .env generados:"
