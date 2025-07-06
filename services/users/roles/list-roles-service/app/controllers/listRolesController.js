@@ -1,5 +1,5 @@
 const { getAllRoles } = require('../services/listRolesService');
-//test CI/CD
+
 const listRolesHandler = async (req, res) => {
     try {
         const roles = await getAllRoles();
