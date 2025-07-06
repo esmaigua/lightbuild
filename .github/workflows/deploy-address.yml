@@ -1,0 +1,114 @@
+name: Deploy Address Microservices to EC2
+
+on:
+  push:
+    paths:
+      - 'services/users/address/**'
+    branches:
+      - qa
+
+env:
+  DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+  DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+  EC2_ADDRESS_HOST: ${{ secrets.EC2_ADDRESS_HOST }}
+  EC2_USERNAME: ${{ secrets.EC2_USERNAME }}
+  EC2_KEYPAIR: ${{ secrets.EC2_KEYPAIR }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1️⃣ Checkout del repositorio
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2️⃣ Login en Docker Hub
+      - name: Login to Docker Hub
+        run: |
+          echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+
+      # 3️⃣ Build & Push de imágenes Docker
+      - name: Build & Push Docker Images
+        working-directory: services/users/address
+        run: |
+          services=("create-address" "list-addresses" "update-address" "delete-address")
+          for svc in "${services[@]}"; do
+            docker build -t "$DOCKER_USERNAME/${svc}-service:latest" "./${svc}-service"
+            docker push "$DOCKER_USERNAME/${svc}-service:latest"
+          done
+
+      # 4️⃣ Copiar docker-compose al EC2
+      - name: Copy docker-compose to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ env.EC2_ADDRESS_HOST }}
+          username: ${{ env.EC2_USERNAME }}
+          key: ${{ env.EC2_KEYPAIR }}
+          source: "services/users/address/docker-compose.address-deploy.yml"
+          target: "/home/ubuntu/address-deployment/"
+          strip_components: 3 
+
+      # 5️⃣ Crear archivos .env en EC2
+      - name: Create .env files on EC2
+        uses: appleboy/ssh-action@v0.1.6
+        with:
+          host: ${{ env.EC2_ADDRESS_HOST }}
+          username: ${{ env.EC2_USERNAME }}
+          key: ${{ env.EC2_KEYPAIR }}
+          script: |
+            echo "🔧 Generando archivos .env..."
+            MONGO_URI="${{ secrets.ADDRESS_MONGO_URI }}"
+
+            mkdir -p /home/ubuntu/address-deployment
+
+            declare -A PORTS=(
+              [create-address]=${{ secrets.CREATE_ADDRESS_PORT }}
+              [list-addresses]=${{ secrets.LIST_ADDRESSES_PORT }}
+              [update-address]=${{ secrets.UPDATE_ADDRESS_PORT }}
+              [delete-address]=${{ secrets.DELETE_ADDRESS_PORT }}
+            )
+
+            for svc in "${!PORTS[@]}"; do
+              mkdir -p "/home/ubuntu/address-deployment/${svc}-service"
+              echo "PORT=${PORTS[$svc]}" > "/home/ubuntu/address-deployment/${svc}-service/.env"
+              echo "MONGO_URI=$MONGO_URI" >> "/home/ubuntu/address-deployment/${svc}-service/.env"
+            done
+
+            echo "✅ Archivos .env generados:"
+            find /home/ubuntu/address-deployment -name .env -exec cat {} \;
+
+      # 6️⃣ Desplegar los microservicios
+      - name: Deploy Services via SSH
+        uses: appleboy/ssh-action@v0.1.6
+        with:
+          host: ${{ env.EC2_ADDRESS_HOST }}
+          username: ${{ env.EC2_USERNAME }}
+          key: ${{ env.EC2_KEYPAIR }}
+          script: |
+            cd /home/ubuntu/address-deployment
+            echo "⛔️ Parando servicios anteriores..."
+            docker compose -f docker-compose.address-deploy.yml down || true
+
+            echo "🔽 Obteniendo imágenes..."
+            docker compose -f docker-compose.address-deploy.yml pull
+
+            echo "🚀 Iniciando servicios..."
+            docker compose -f docker-compose.address-deploy.yml up -d
+
+            echo "📦 Contenedores activos:"
+            docker ps --filter "name=address"
+
+      # 7️⃣ Verificación adicional
+      - name: Health Check
+        uses: appleboy/ssh-action@v0.1.6
+        with:
+          host: ${{ env.EC2_ADDRESS_HOST }}
+          username: ${{ env.EC2_USERNAME }}
+          key: ${{ env.EC2_KEYPAIR }}
+          script: |
+            echo "🧪 Realizando pruebas de conectividad..."
+            curl -v http://localhost:3005/health || echo "Create Address Service no responde"
+            curl -v http://localhost:3006/health || echo "List Addresses Service no responde"
+            curl -v http://localhost:3007/health || echo "Update Address Service no responde"
+            curl -v http://localhost:3008/health || echo "Delete Address Service no responde"
