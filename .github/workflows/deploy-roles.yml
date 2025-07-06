@@ -47,7 +47,7 @@ jobs:
           key: ${{ env.EC2_KEYPAIR }}
           source: services/users/roles/docker-compose.roles-deploy.yml
           target: /home/ubuntu/roles-deployment/
-          strip_components: 4
+          #strip_components: 4
 
       # 5️⃣ Crear archivos .env en EC2 usando secretos
       - name: Create .env files on EC2
