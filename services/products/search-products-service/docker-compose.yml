@@ -1,0 +1,20 @@
+version: '3.9'
+services:
+  db:
+    image: mysql:8
+    container_name: product-db-search
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: catalog
+    ports:
+      - "3314:3306"
+  app:
+    build: .
+    container_name: search-products-service
+    ports:
+      - "3017:3017"
+    depends_on:
+      - db
+    env_file:
+      - .env

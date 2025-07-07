@@ -1,0 +1,123 @@
+version: "3.9"
+
+services:
+  catalog-db:
+    image: mysql:8
+    container_name: catalog-db
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: catalog
+    ports:
+      - "3307:3306"
+    volumes:
+      - catalog-data:/var/lib/mysql
+    networks:
+      - product-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  create-product-service:
+    build: ./create-product-service
+    container_name: create-product-service
+    ports:
+      - "3012:3012"
+    depends_on:
+      - catalog-db
+    environment:
+      - DATABASE_URL=mysql+mysqlconnector://root:password@catalog-db:3306/catalog
+    networks:
+      - product-network
+
+  read-product-service:
+    build: ./read-product-service
+    container_name: read-product-service
+    ports:
+      - "3013:3013"
+    depends_on:
+      - catalog-db
+    environment:
+      - DATABASE_URL=mysql+mysqlconnector://root:password@catalog-db:3306/catalog
+    networks:
+      - product-network
+
+  update-product-service:
+    build: ./update-product-service
+    container_name: update-product-service
+    ports:
+      - "3014:3014"
+    depends_on:
+      - catalog-db
+    environment:
+      - DATABASE_URL=mysql+mysqlconnector://root:password@catalog-db:3306/catalog
+    networks:
+      - product-network
+
+  delete-product-service:
+    build: ./delete-product-service
+    container_name: delete-product-service
+    ports:
+      - "3015:3015"
+    depends_on:
+      - catalog-db
+    environment:
+      - DATABASE_URL=mysql+mysqlconnector://root:password@catalog-db:3306/catalog
+    networks:
+      - product-network
+
+  list-products-service:
+    build: ./list-products-service
+    container_name: list-products-service
+    ports:
+      - "3016:3016"
+    depends_on:
+      - catalog-db
+    environment:
+      - DATABASE_URL=mysql+mysqlconnector://root:password@catalog-db:3306/catalog
+    networks:
+      - product-network
+
+  search-products-service:
+    build: ./search-products-service
+    container_name: search-products-service
+    ports:
+      - "3017:3017"
+    depends_on:
+      - catalog-db
+    environment:
+      - DATABASE_URL=mysql+mysqlconnector://root:password@catalog-db:3306/catalog
+    networks:
+      - product-network
+
+  create-category-service:
+    build: ./create-category-service
+    container_name: create-category-service
+    ports:
+      - "3018:3018"
+    depends_on:
+      - catalog-db
+    environment:
+      - DATABASE_URL=mysql+mysqlconnector://root:password@catalog-db:3306/catalog
+    networks:
+      - product-network
+
+  list-categories-service:
+    build: ./list-categories-service
+    container_name: list-categories-service
+    ports:
+      - "3019:3019"
+    depends_on:
+      - catalog-db
+    environment:
+      - DATABASE_URL=mysql+mysqlconnector://root:password@catalog-db:3306/catalog
+    networks:
+      - product-network
+
+volumes:
+  catalog-data:
+
+networks:
+  product-network:
+    driver: bridge

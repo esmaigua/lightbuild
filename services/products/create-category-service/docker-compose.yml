@@ -1,0 +1,20 @@
+version: '3.9'
+services:
+  db:
+    image: mysql:8
+    container_name: category-db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: catalog
+    ports:
+      - "3315:3306"
+  app:
+    build: .
+    container_name: create-category-service
+    ports:
+      - "3018:3018"
+    depends_on:
+      - db
+    env_file:
+      - .env

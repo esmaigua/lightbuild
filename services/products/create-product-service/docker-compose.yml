@@ -1,0 +1,20 @@
+version: '3.9'
+services:
+  db:
+    image: mysql:8
+    container_name: product-db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: catalog
+    ports:
+      - "3309:3306"
+  app:
+    build: .
+    container_name: create-product-service
+    ports:
+      - "3012:3012"
+    depends_on:
+      - db
+    env_file:
+      - .env

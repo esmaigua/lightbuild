@@ -1,0 +1,20 @@
+version: '3.9'
+services:
+  db:
+    image: mysql:8
+    container_name: product-db-delete
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: catalog
+    ports:
+      - "3312:3306"
+  app:
+    build: .
+    container_name: delete-product-service
+    ports:
+      - "3015:3015"
+    depends_on:
+      - db
+    env_file:
+      - .env

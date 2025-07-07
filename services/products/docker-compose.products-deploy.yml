@@ -1,0 +1,102 @@
+version: '3.8'
+
+services:
+  create-product-service:
+    image: esmaigua/create-product-service:latest
+    ports:
+      - '3012:3012'
+    env_file: ./create-product-service/.env
+    networks:
+      - product-network
+    depends_on:
+      - catalog-db
+
+  read-product-service:
+    image: esmaigua/read-product-service:latest
+    ports:
+      - '3013:3013'
+    env_file: ./read-product-service/.env
+    networks:
+      - product-network
+    depends_on:
+      - catalog-db
+
+  update-product-service:
+    image: esmaigua/update-product-service:latest
+    ports:
+      - '3014:3014'
+    env_file: ./update-product-service/.env
+    networks:
+      - product-network
+    depends_on:
+      - catalog-db
+
+  delete-product-service:
+    image: esmaigua/delete-product-service:latest
+    ports:
+      - '3015:3015'
+    env_file: ./delete-product-service/.env
+    networks:
+      - product-network
+    depends_on:
+      - catalog-db
+
+  list-products-service:
+    image: esmaigua/list-products-service:latest
+    ports:
+      - '3016:3016'
+    env_file: ./list-products-service/.env
+    networks:
+      - product-network
+    depends_on:
+      - catalog-db
+
+  search-products-service:
+    image: esmaigua/search-products-service:latest
+    ports:
+      - '3017:3017'
+    env_file: ./search-products-service/.env
+    networks:
+      - product-network
+    depends_on:
+      - catalog-db
+
+  create-category-service:
+    image: esmaigua/create-category-service:latest
+    ports:
+      - '3018:3018'
+    env_file: ./create-category-service/.env
+    networks:
+      - product-network
+    depends_on:
+      - catalog-db
+
+  list-categories-service:
+    image: esmaigua/list-categories-service:latest
+    ports:
+      - '3019:3019'
+    env_file: ./list-categories-service/.env
+    networks:
+      - product-network
+    depends_on:
+      - catalog-db
+
+  catalog-db:
+    image: mysql:8
+    container_name: catalog-db
+    ports:
+      - '3309:3306'
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: catalog
+    volumes:
+      - mysql_catalog_data:/var/lib/mysql
+    networks:
+      - product-network
+
+volumes:
+  mysql_catalog_data:
+
+networks:
+  product-network:
+    driver: bridge
